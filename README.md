@@ -1,1 +1,1 @@
-# cordova-plugin-vesdk
+# vesdk-cordova
