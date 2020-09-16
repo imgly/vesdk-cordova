@@ -21,6 +21,8 @@ cordova plugin add cordova-plugin-videoeditorsdk
 ```
 
 ### Android
+**Configuration for Android:**
+Configure VideoEditor SDK for Android by opening `imglyConfig.gradle`, you can comment out the modules you don't need to save size.
 
 Because VideoEditor SDK for Android is quite large, there is a high chance that you will need to enable [Multidex](https://developer.android.com/studio/build/multidex) for your project as follows:
 
