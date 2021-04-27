@@ -3,6 +3,16 @@
 #import <objc/message.h>
 @import VideoEditorSDK;
 
+@interface NSDictionary (VESDK_IMGLY_Category)
+
+- (nullable id)vesdk_getValueForKeyPath:(nonnull NSString *)keyPath
+                                default:(nullable id)defaultValue;
++ (nullable id)vesdk_getValue:(nullable NSDictionary *)dictionary
+              valueForKeyPath:(nonnull NSString *)keyPath
+                      default:(nullable id)defaultValue;
+
+@end
+
 @interface VESDKPlugin () <PESDKVideoEditViewControllerDelegate>
 @property(strong) CDVInvokedUrlCommand *lastCommand;
 @end
@@ -194,28 +204,28 @@ const struct VESDK_IMGLY_Constants VESDK_IMGLY = {
     };
 
     // Set default values if necessary
-    id valueExportType = [NSDictionary getValue:withConfiguration
+    id valueExportType = [NSDictionary vesdk_getValue:withConfiguration
                                 valueForKeyPath:@"export.type"
                                         default:VESDK_IMGLY.kExportTypeFileURL];
     id valueExportFile = [NSDictionary
-               getValue:withConfiguration
+               vesdk_getValue:withConfiguration
         valueForKeyPath:@"export.filename"
                 default:[NSString stringWithFormat:@"imgly-export/%@",
                                                    [[NSUUID UUID] UUIDString]]];
     id valueSerializationEnabled =
-        [NSDictionary getValue:withConfiguration
+        [NSDictionary vesdk_getValue:withConfiguration
                valueForKeyPath:@"export.serialization.enabled"
                        default:@(NO)];
     id valueSerializationType =
-        [NSDictionary getValue:withConfiguration
+        [NSDictionary vesdk_getValue:withConfiguration
                valueForKeyPath:@"export.serialization.exportType"
                        default:VESDK_IMGLY.kExportTypeFileURL];
     id valueSerializationFile =
-        [NSDictionary getValue:withConfiguration
+        [NSDictionary vesdk_getValue:withConfiguration
                valueForKeyPath:@"export.serialization.filename"
                        default:valueExportFile];
     id valueSerializationEmbedImage =
-        [NSDictionary getValue:withConfiguration
+        [NSDictionary vesdk_getValue:withConfiguration
                valueForKeyPath:@"export.serialization.embedSourceImage"
                        default:@(NO)];
 
@@ -247,7 +257,7 @@ const struct VESDK_IMGLY_Constants VESDK_IMGLY = {
     NSMutableDictionary *updatedDictionary =
         [NSMutableDictionary dictionaryWithDictionary:withConfiguration];
     NSMutableDictionary *exportDictionary = [NSMutableDictionary
-        dictionaryWithDictionary:[NSDictionary getValue:updatedDictionary
+        dictionaryWithDictionary:[NSDictionary vesdk_getValue:updatedDictionary
                                         valueForKeyPath:@"export"
                                                 default:@{}]];
     [exportDictionary setValue:exportFile.absoluteString
@@ -460,10 +470,9 @@ const struct VESDK_IMGLY_Constants VESDK_IMGLY = {
 @implementation NSDictionary (VESDK_IMGLY_Category)
 
 //// start extract value from path
-- (nullable id)getValueForKeyPath:(nullable NSDictionary *)dictionary
-                  valueForKeyPath:(nonnull NSString *)keyPath
+- (nullable id)vesdk_getValueForKeyPath:(nonnull NSString *)keyPath
                           default:(nullable id)defaultValue {
-  id value = [dictionary valueForKeyPath:keyPath];
+  id value = [self valueForKeyPath:keyPath];
   if (value == nil || value == [NSNull null]) {
     return defaultValue;
   } else {
@@ -471,14 +480,13 @@ const struct VESDK_IMGLY_Constants VESDK_IMGLY = {
   }
 }
 
-+ (nullable id)getValue:(nullable NSDictionary *)dictionary
++ (nullable id)vesdk_getValue:(nullable NSDictionary *)dictionary
         valueForKeyPath:(nonnull NSString *)keyPath
                 default:(nullable id)defaultValue {
   if (dictionary == nil) {
     return defaultValue;
   }
-  return [dictionary getValueForKeyPath:dictionary
-                        valueForKeyPath:keyPath
+  return [dictionary vesdk_getValueForKeyPath:keyPath
                                 default:defaultValue];
 }
 //// end extract value from path

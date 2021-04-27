@@ -35,7 +35,7 @@ typedef void (^CDV_VESDKWillPresentBlock)(
 @property(strong, atomic, nullable)
     PESDKMediaEditViewController *mediaEditViewController;
 
-- (void)present:(CDVInvokedUrlCommand *)command;
+- (void)present:(CDVInvokedUrlCommand *_Nonnull)command;
 - (void)unlockWithLicense:(nonnull id)json;
 
 extern const struct VESDK_IMGLY_Constants {
@@ -50,17 +50,7 @@ extern const struct VESDK_IMGLY_Constants {
 
 @end
 
-@interface NSDictionary (VESDK_IMGLY_Category)
-
-- (nullable id)getValueForKeyPath:(nonnull NSString *)keyPath
-                          default:(nullable id)defaultValue;
-+ (nullable id)getValue:(nullable NSDictionary *)dictionary
-        valueForKeyPath:(nonnull NSString *)keyPath
-                default:(nullable id)defaultValue;
-
-@end
-
-@interface VESDKConvert
+@interface VESDKConvert : NSObject
 
 typedef NSURL VESDK_IMGLY_ExportURL;
 typedef NSURL VESDK_IMGLY_ExportFileURL;
