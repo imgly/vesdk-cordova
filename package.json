@@ -1,14 +1,33 @@
 {
     "name": "cordova-plugin-videoeditorsdk",
-    "title": "Cordova plugin for VideoEditor SDK",
-    "version": "1.1.0",
-    "types": "./types/index.d.ts",
-    "cordova_name": "cordova-plugin-videoeditorsdk",
     "description": "A Cordova plugin for VideoEditor SDK. Integrate the video editor into your own HTML5, iOS or Android app - in minutes!",
+    "version": "2.0.0",
+    "types": "./types/index.d.ts",
     "main": "www/videoeditorsdk.js",
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1"
     },
+    "cordova": {
+        "id": "cordova-plugin-videoeditorsdk",
+        "platforms": [
+            "android",
+            "ios"
+        ]
+    },
+    "keywords": [
+        "cordova",
+        "videoeditorsdk",
+        "ecosystem:cordova",
+        "cordova-android",
+        "cordova-ios",
+        "video",
+        "video editor",
+        "videoeditor",
+        "VideoEditor SDK",
+        "SDK",
+        "ios",
+        "android"
+    ],
     "repository": {
         "type": "git",
         "url": "https://github.com/imgly/vesdk-cordova.git"
@@ -19,36 +38,18 @@
         "email": "contact@img.ly"
     },
     "license": "BSD-3-Clause",
-    "licenseFilename": "LICENSE.md",
-    "readmeFilename": "README.md",
-    "cordova": {
-        "id": "cordova-plugin-videoeditorsdk",
-        "platforms": [
-            "android",
-            "ios"
-        ]
-    },
     "engines": {
         "cordovaDependencies": {
             "1.0.0": {
                 "cordova-ios": ">4.3.0"
+            },
+            "2.0.0": {
+                "cordova": ">=9.0.0",
+                "cordova-ios": ">5.0.0",
+                "cordova-android": ">=9.0.0"
             }
         }
     },
-    "keywords": [
-        "ecosystem:cordova",
-        "cordova-android",
-        "cordova-ios",
-        "cordova",
-        "video",
-        "video editor",
-        "videoeditor",
-        "videoeditorsdk",
-        "VideoEditor SDK",
-        "SDK",
-        "ios",
-        "android"
-    ],
     "dependencies": {
         "async": "^3.2.0"
     }

@@ -48,7 +48,7 @@ Open the editor with a video:
 VESDK.openEditor(
   successCallback,
   failureCallback,
-  VESDK.loadResource('www/assets/video.mp4')
+  VESDK.resolveStaticResource('www/assets/video.mp4')
 );
 ```
 
