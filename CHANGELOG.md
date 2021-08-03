@@ -1,3 +1,13 @@
+## [2.1.0]
+
+### Added
+
+* Added integration and documentation for new video composition, video library and audio library tools. 
+
+### Fixed
+
+* [Android] Fixed compiling issues with `compileSdkVersion` 30. 
+
 ## [2.0.0]
 
 ### Changed

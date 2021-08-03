@@ -7,26 +7,46 @@ var VESDK = {
    * @param {function} success - The callback returns a `VideoEditorResult` or `null` if the editor
    * is dismissed without exporting the edited video.
    * @param {function} failure - The callback function that will be called when an error occurs.
-   * @param {string} video The source of the video to be edited.
+   * @param {string | [string]} video The source of the video to be edited.
    * Can be a local or remote URI (debugging only). Remote resources should be downloaded in advance and
    * then passed to the editor as local resources. Static local resources which reside, e.g., in the `www`
    * folder of your app, should be resolved by `VESDK.resolveStaticResource("www/path/to/your/video")` 
    * before they can be passed to the editor.
-   * @param {object} configuration The configuration used to initialize the editor.
+   * 
+   * For video compositions an array of video sources is accepted as input. If an empty array is
+   * passed to the editor `videoSize` must be set. You need to obtain a **valid license** for this 
+   * feature to work.
+   * @param {Configuration} configuration The configuration used to initialize the editor.
    * @param {object} serialization The serialization used to initialize the editor. 
    * This restores a previous state of the editor by re-applying all modifications to
    * the loaded video.
+   * @param {Size} videoSize **Video composition only:** The size of the video in pixels that is about to be edited.
+   * This overrides the natural dimensions of the video(s) passed to the editor. All videos will
+   * be fitted to the `videoSize` aspect by adding black bars on the left and right side or top and bottom.
    */
-  openEditor: function (success, failure, video, configuration, serialization) {
+  openEditor: function (success, failure, video, configuration, serialization, videoSize = null) {
     var options = {};
-    options.path = video;
+
     if (configuration != null) {
       options.configuration = configuration;
     }
     if (serialization != null) {
       options.serialization = serialization;
     }
-    cordova.exec(success, failure, "VESDK", "present", [options]);
+
+    if (Array.isArray(video)) {
+      if (videoSize != null) {
+        options.size = videoSize;
+      }
+      options.videos = video;
+      cordova.exec(success, failure, "VESDK", "presentComposition", [options]);
+    } else {
+      if (videoSize != null) {
+        console.warn("Ignoring the video size. This parameter can only be used in combination with video compositions. If your license includes the video composition feature please wrap your video source into an array instead.")
+      }
+      options.path = video;
+      cordova.exec(success, failure, "VESDK", "present", [options]);
+    }
   },
 
   /**

@@ -66,22 +66,101 @@ const struct VESDK_IMGLY_Constants VESDK_IMGLY = {
     .kExportTypeDataURL = @"data-url",
     .kExportTypeObject = @"object"};
 
+- (void)presentComposition:(CDVInvokedUrlCommand *)command {
+    if (self.lastCommand == nil) {
+        self.lastCommand = command;
+        NSDictionary *options = command.arguments[0];
+        NSDictionary *configuration = options[@"configuration"];
+        NSDictionary *serialization = options[@"serialization"];
+        NSDictionary *videoSize = options[@"size"];
+        NSArray<NSString *> *videos = options[@"videos"];
+
+        PESDKVideo *video;
+        CGSize compositionSize = [self retrieveSize:videoSize];
+        NSMutableArray<AVAsset *> *assets = [[NSMutableArray alloc] init];
+
+        if (videos.count > 0) {
+            NSMutableArray<NSString *> *array = [[NSMutableArray alloc] init];
+            for (NSString *video in videos) {
+                if ([video isKindOfClass:[NSNull class]] == false) {
+                    NSURL *appFolderUrl = [[NSBundle mainBundle] resourceURL];
+                    NSString *videoPath = [video stringByReplacingOccurrencesOfString:@"imgly_asset:///" withString:appFolderUrl.absoluteString];
+                    [array addObject:videoPath];
+                }
+            }
+            NSArray *copiedArray = [array mutableCopy];
+
+            for (NSString *video in copiedArray) {
+                NSURL *url = [[NSURL alloc] initWithString:video];
+                AVAsset *asset = [AVAsset assetWithURL: url];
+                [assets addObject:asset];
+            }
+        }
+
+        if (CGSizeEqualToSize(CGSizeZero, compositionSize)) {
+            if (videos.count == 0) {
+                NSString *message = @"An editor without any videos must have a valid composition size.";
+                CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:message];
+                [self closeControllerWithResult:result];
+                return;
+            }
+            video = [[PESDKVideo alloc] initWithAssets:assets];
+        } else {
+            if (compositionSize.height <= 0 || compositionSize.width <= 0) {
+                NSString *message = @"Invalid video size: width and height must be greater than zero";
+                CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:message];
+                [self closeControllerWithResult:result];
+                return;
+            }
+            if (videos.count == 0) {
+                video = [[PESDKVideo alloc] initWithSize:compositionSize];
+            } else {
+                video = [[PESDKVideo alloc] initWithAssets:assets size:compositionSize];
+            }
+        }
+        [self startEditor:video configuration:configuration serialization:serialization];
+    }
+}
+
+- (CGSize)retrieveSize:(NSDictionary *)dictionary {
+    NSNumber *width = [dictionary valueForKey:@"width"];
+    NSNumber *height = [dictionary valueForKey:@"height"];
+    if ([width isKindOfClass:[NSNull class]] || [height isKindOfClass:[NSNull class]] || width == nil || height == nil) {
+        return CGSizeZero;
+    } else {
+        return CGSizeMake(width.doubleValue, height.doubleValue);
+    }
+}
+
 - (void)present:(CDVInvokedUrlCommand *)command {
 
   if (self.lastCommand == nil) {
-    self.lastCommand = command;
+      self.lastCommand = command;
+      NSDictionary *options = command.arguments[0];
+      NSDictionary *configuration = options[@"configuration"];
+      NSDictionary *serialization = options[@"serialization"];
+      NSString *video = options[@"path"];
 
-    // Parse arguments and extract filepath
-    NSDictionary *options = command.arguments[0];
-    NSString *filepath = options[@"path"];
-    NSDictionary *tempWithConfiguration = options[@"configuration"];
-    NSDictionary *state = options[@"serialization"];
+      if ([video isKindOfClass:[NSNull class]] == false) {
+          NSURL *appFolderUrl = [[NSBundle mainBundle] resourceURL];
+          NSString *videoPath = [video stringByReplacingOccurrencesOfString:@"imgly_asset:///" withString:appFolderUrl.absoluteString];
+          NSURL *videoURL = [[NSURL alloc] initWithString:videoPath];
+          PESDKVideo *video = [[PESDKVideo alloc] initWithURL:videoURL];
+          [self startEditor:video configuration:configuration serialization:serialization];
+      } else {
+          NSString *message = @"The editor must not be initialized without a video.";
+          CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:message];
+          [self closeControllerWithResult:result];
+      }
+  }
+}
+
+- (void)startEditor:(PESDKVideo *)video
+        configuration:(nullable NSDictionary *)configurationDict
+        serialization:(nullable NSDictionary *)serializationDict {
 
     // Add the app folder path to the beginning of the image path
     NSURL *appFolderUrl = [[NSBundle mainBundle] resourceURL];
-    filepath = [filepath
-        stringByReplacingOccurrencesOfString:@"imgly_asset:///"
-                                  withString:appFolderUrl.absoluteString];
 
     // Convert the pathes form `imgly_asset:///` to a valid pathes
     NSDictionary *withConfiguration;
@@ -89,9 +168,9 @@ const struct VESDK_IMGLY_Constants VESDK_IMGLY = {
     NSString *jsonString;
 
     // Convert NSDictionary to JSON string
-    if (tempWithConfiguration != nil) {
+    if (configurationDict != nil) {
       NSData *jsonTestData =
-          [NSJSONSerialization dataWithJSONObject:tempWithConfiguration
+          [NSJSONSerialization dataWithJSONObject:configurationDict
                                           options:NSJSONWritingPrettyPrinted
                                             error:&jsonConversionError];
       if (jsonConversionError != nil) {
@@ -136,9 +215,6 @@ const struct VESDK_IMGLY_Constants VESDK_IMGLY = {
             PESDKConfiguration *_Nonnull configuration,
             NSData *_Nullable serializationData) {
 
-      NSURL *url = [NSURL URLWithString:filepath];
-      PESDKVideo *video = [[PESDKVideo alloc] initWithURL:url];
-
       PESDKPhotoEditModel *photoEditModel = [[PESDKPhotoEditModel alloc] init];
 
       if (serializationData != nil) {
@@ -150,10 +226,7 @@ const struct VESDK_IMGLY_Constants VESDK_IMGLY = {
       }
 
       PESDKVideoEditViewController *videoEditViewController =
-          [[PESDKVideoEditViewController alloc]
-              initWithVideoAsset:video
-                   configuration:configuration
-                  photoEditModel:photoEditModel];
+          [PESDKVideoEditViewController videoEditViewControllerWithVideoAsset:video configuration:configuration photoEditModel:photoEditModel];
 
       videoEditViewController.modalPresentationStyle =
           UIModalPresentationFullScreen;
@@ -167,8 +240,8 @@ const struct VESDK_IMGLY_Constants VESDK_IMGLY = {
     };
 
     NSData *serializationData = nil;
-    if (state != nil) {
-      serializationData = [NSJSONSerialization dataWithJSONObject:state
+    if (serializationDict != nil) {
+      serializationData = [NSJSONSerialization dataWithJSONObject:serializationDict
                                                           options:kNilOptions
                                                             error:&error];
       if (error != nil) {
@@ -205,7 +278,7 @@ const struct VESDK_IMGLY_Constants VESDK_IMGLY = {
 
     // Set default values if necessary
     id valueExportType = [NSDictionary vesdk_getValue:withConfiguration
-                                valueForKeyPath:@"export.type"
+                                valueForKeyPath:@"export.image.exportType"
                                         default:VESDK_IMGLY.kExportTypeFileURL];
     id valueExportFile = [NSDictionary
                vesdk_getValue:withConfiguration
@@ -318,7 +391,6 @@ const struct VESDK_IMGLY_Constants VESDK_IMGLY = {
     [self.viewController presentViewController:self.mediaEditViewController
                                       animated:YES
                                     completion:nil];
-  }
 }
 
 - (void)unlockWithLicense:(nonnull CDVInvokedUrlCommand *)json {
