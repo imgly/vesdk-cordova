@@ -121,7 +121,7 @@ class VESDKPlugin : CordovaPlugin() {
         MainThreadRunnable {
             EditorBuilder(currentActivity)
               .setSettingsList(settingsList)
-              .startActivityForResult(currentActivity, EDITOR_RESULT_ID)
+              .startActivityForResult(currentActivity, EDITOR_RESULT_ID, arrayOfNulls(0))
         }()
     }
 
