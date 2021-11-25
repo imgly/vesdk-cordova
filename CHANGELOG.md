@@ -1,3 +1,14 @@
+## [3.0.0]
+
+### Added
+
+* Added integration and documentation for force trim.
+
+### Changed
+
+* [Android] Migrated the plugin to AndroidX.
+* Aligned emoji support for iOS and Android. Emoji support is not optimized for cross-platform use and disabled by default. Added option `configuration.text.allowEmojis` to opt in.
+
 ## [2.2.0]
 
 ### Added

@@ -30,10 +30,21 @@ import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 
+/** VESDKPlugin */
 class VESDKPlugin : CordovaPlugin() {
+
+    companion object {
+        // This number must be unique. It is public to allow client code to change it if the same value is used elsewhere.
+        var EDITOR_RESULT_ID = 29065
+    }
+
+    /** The callback used for the plugin. */
     private var callback: CallbackContext? = null
 
+    /** The currently used settings list. */
     private var currentSettingsList: VideoEditorSettingsList? = null
+
+    /** The currently used configuration. */
     private var currentConfig: Configuration? = null
 
     override fun onStart() {
@@ -50,8 +61,7 @@ class VESDKPlugin : CordovaPlugin() {
             val serialization = options.optString("serialization", null)
 
             val config: Map<String, Any> = Gson().fromJson(configuration, object : TypeToken<Map<String, Any>>() {}.type)
-
-            present(this.cordova.activity, filepath, config, serialization, callbackContext)
+            present(filepath, config, serialization, callbackContext)
             true
         } else if (action == "presentComposition") {
             val options = data.getJSONObject(0)
@@ -60,7 +70,7 @@ class VESDKPlugin : CordovaPlugin() {
             val configuration = options.optString("configuration", "{}")
             val serialization = options.optString("serialization", null)
 
-            var videoClips = if (videos != null) {
+            val videoClips = if (videos != null) {
                 Array(videos.length()) { videos.getString(it) }
             } else {
                 arrayOf<String>()
@@ -69,8 +79,7 @@ class VESDKPlugin : CordovaPlugin() {
             val gson = Gson()
             val config: Map<String, Any> = gson.fromJson(configuration, object : TypeToken<Map<String, Any>>() {}.type)
             val videoSize: Map<String, Any>? = gson.fromJson(size, object : TypeToken<Map<String, Any>?>() {}.type)
-
-            presentComposition(this.cordova.activity, videoClips, config, serialization, videoSize, callbackContext)
+            presentComposition(videoClips, config, serialization, videoSize, callbackContext)
             true
         } else if (action == "unlockWithLicense") {
             val license = data[0].toString()
@@ -81,19 +90,30 @@ class VESDKPlugin : CordovaPlugin() {
         }
     }
 
+    /**
+     * Unlocks the SDK with a stringified license.
+     *
+     * @param license The license as a *String*.
+     */
     fun unlockWithLicense(license: String) {
         val jsonString = this.cordova.activity.assets.open(license).bufferedReader().use {
             it.readText()
         }
 
         VESDK.initSDKWithLicenseData(jsonString)
-
         IMGLY.authorize()
     }
 
+    /**
+     * Configures and presents the editor.
+     *
+     * @param filepath The video source as *String* which should be loaded into the editor.
+     * @param config The *Configuration* to configure the editor with as if any.
+     * @param serialization The serialization to load into the editor if any.
+     * @param callbackContext The *CallbackContext* used to communicate with the plugin.
+     */
     private fun present(
-        mainActivity: Activity?,
-        filepath: String?,
+        filepath: String,
         config: Map<String, Any>,
         serialization: String?,
         callbackContext: CallbackContext
@@ -107,26 +127,24 @@ class VESDKPlugin : CordovaPlugin() {
             it.applyOn(settingsList)
         }
 
-        if (filepath != null) {
-            settingsList.configure<LoadSettings> { loadSettings ->
-                loadSettings.source = retrieveURI(filepath)
-            }
+        settingsList.configure<LoadSettings> { loadSettings ->
+            loadSettings.source = retrieveURI(filepath)
         }
 
-        readSerialisation(settingsList, serialization, filepath == null)
-
-        val currentActivity = mainActivity ?: throw RuntimeException("Can't start the Editor because there is no current activity")
-        cordova.setActivityResultCallback(this)
-
-        MainThreadRunnable {
-            EditorBuilder(currentActivity)
-              .setSettingsList(settingsList)
-              .startActivityForResult(currentActivity, EDITOR_RESULT_ID, arrayOfNulls(0))
-        }()
+        readSerialisation(settingsList, serialization)
+        startEditor(settingsList)    
     }
 
+    /**
+     * Configures and presents the editor.
+     *
+     * @param videos The video sources as *List<String>* which should be loaded into the editor.
+     * @param config The *Configuration* to configure the editor with as if any.
+     * @param serialization The serialization to load into the editor if any.
+     * @param size The size of the video composition.
+     * @param callbackContext The *CallbackContext* used to communicate with the plugin.
+     */
     private fun presentComposition(
-        mainActivity: Activity?,
         videos: Array<String>?,
         config: Map<String, Any>,
         serialization: String?,
@@ -170,18 +188,29 @@ class VESDKPlugin : CordovaPlugin() {
             it.source = source
         }
 
-        readSerialisation(settingsList, serialization, false)
+        readSerialisation(settingsList, serialization)
+        startEditor(settingsList)
+    }
 
-        val currentActivity = mainActivity ?: throw RuntimeException("Can't start the Editor because there is no current activity")
+    /**
+     * Starts the editor.
+     * @param settingsList The *VideoEditorSettingsList* used to configure the editor.
+     */
+    private fun startEditor(settingsList: VideoEditorSettingsList) {
+        val currentActivity = cordova.activity ?: throw RuntimeException("Can't start the Editor because there is no current activity")
         cordova.setActivityResultCallback(this)
-
         MainThreadRunnable {
             EditorBuilder(currentActivity)
-              .setSettingsList(settingsList)
-              .startActivityForResult(currentActivity, EDITOR_RESULT_ID)
+                .setSettingsList(settingsList)
+                .startActivityForResult(currentActivity, EDITOR_RESULT_ID, arrayOfNulls(0))
         }()
     }
 
+    /**
+     * Converts a string into a usable *Uri*.
+     * @param source The source of the video as a *String*.
+     * @return The converted source as a *Uri*.
+     */
     private fun retrieveURI(source: String) : Uri {
         return if (source.startsWith("data:")) {
             UriHelper.createFromBase64String(source.substringAfter("base64,"))
@@ -195,6 +224,11 @@ class VESDKPlugin : CordovaPlugin() {
         }
     }
 
+    /**
+     * Resolves a size for the video composition into a usable *Uri?*.
+     * @param size The desired size of the video composition as a *Map<String, Any>?*.
+     * @return The converted video size as a *Uri?*.
+     */
     private fun resolveSize(size: Map<String, Any>?) : Uri? {
         val height = size?.get("height") as? Double ?: 0.0
         val width = size?.get("width") as? Double ?: 0.0
@@ -204,25 +238,11 @@ class VESDKPlugin : CordovaPlugin() {
         return LoadSettings.compositionSource(height.toInt(), width.toInt(), 60)
     }
 
-    override fun onRestoreStateForActivityResult(state: Bundle?, callbackContext: CallbackContext) {
-        this.callback = callbackContext
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent) {
-        if (requestCode == EDITOR_RESULT_ID) {
-            when (resultCode) {
-                Activity.RESULT_OK -> success(data)
-                Activity.RESULT_CANCELED -> {
-                    val nullValue: String? = null
-                    callback?.success(nullValue) // return null
-                }
-                else -> callback?.error("Media error (code $resultCode)")
-            }
-        }
-    }
-
+    /**
+     * Called when the editor has succeeded exporting the video.
+     * @param intent The *Intent?*.
+     */
     private fun success(intent: Intent?) {
-
         val data = try {
             intent?.let { EditorSDKResult(it) }
         } catch (e: EditorSDKResult.NotAnImglyResultException) {
@@ -244,10 +264,10 @@ class VESDKPlugin : CordovaPlugin() {
                         }
                         when (serializationConfig.exportType) {
                             SerializationExportType.FILE_URL -> {
-                                val uri = serializationConfig.filename?.let { 
+                                val uri = serializationConfig.filename?.let {
                                     Uri.parse(it)
                                 } ?: Uri.fromFile(File.createTempFile("serialization", ".json"))
-                                Encoder.createOutputStream(uri).use { outputStream -> 
+                                Encoder.createOutputStream(uri).use { outputStream ->
                                     IMGLYFileWriter(settingsList).writeJson(outputStream)
                                 }
                                 uri.toString()
@@ -270,16 +290,28 @@ class VESDKPlugin : CordovaPlugin() {
         }()
     }
 
-    private fun readSerialisation(settingsList: SettingsList, serialization: String?, readImage: Boolean) {
+    /**
+     * Reads the serialization to restore a previous state in the editor.
+     * @param settingsList The *SettingsList*.
+     * @param serialization The serialization which holds the previous state.
+     */
+    private fun readSerialisation(settingsList: SettingsList, serialization: String?) {
         if (serialization != null) {
             skipIfNotExists {
                 IMGLYFileReader(settingsList).also {
-                    it.readJson(serialization, readImage)
+                    it.readJson(serialization, false)
                 }
             }
         }
     }
 
+    /**
+     * Converts the editor result into a readable *JSONObject*.
+     * @param video The output source of the video.
+     * @param hasChanges Whether any export operations have been applied to the video.
+     * @param serialization The serialization which stores the current state.
+     * @return The converted *JSONObject*.
+     */
     private fun createResult(video: Uri?, hasChanges: Boolean, serialization: Any?): JSONObject {
         val result = JSONObject()
         result.put("video", video)
@@ -288,8 +320,20 @@ class VESDKPlugin : CordovaPlugin() {
         return result
     }
 
-    companion object {
-        // This number must be unique. It is public to allow client code to change it if the same value is used elsewhere.
-        var EDITOR_RESULT_ID = 29065
+    override fun onRestoreStateForActivityResult(state: Bundle?, callbackContext: CallbackContext) {
+        this.callback = callbackContext
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent) {
+        if (requestCode == EDITOR_RESULT_ID) {
+            when (resultCode) {
+                Activity.RESULT_OK -> success(data)
+                Activity.RESULT_CANCELED -> {
+                    val nullValue: String? = null
+                    callback?.success(nullValue) // return null
+                }
+                else -> callback?.error("Media error (code $resultCode)")
+            }
+        }
     }
 }
