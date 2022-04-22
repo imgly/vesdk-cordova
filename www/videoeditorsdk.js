@@ -1,14 +1,14 @@
 var VESDK = {
   /**
    * Modally present a video editor.
-   * @note Edited videos from remote resources can be previewed in the editor but their export 
-   * will fail! Remote video resources are currently supported for debugging purposes only.
+   * @note Remote resources are not optimized and therefore should be downloaded
+   * in advance and then passed to the editor as local resources.
    *
    * @param {function} success - The callback returns a `VideoEditorResult` or `null` if the editor
    * is dismissed without exporting the edited video.
    * @param {function} failure - The callback function that will be called when an error occurs.
    * @param {string | [string]} video The source of the video to be edited.
-   * Can be a local or remote URI (debugging only). Remote resources should be downloaded in advance and
+   * Can be a local or remote URI. Remote resources should be downloaded in advance and
    * then passed to the editor as local resources. Static local resources which reside, e.g., in the `www`
    * folder of your app, should be resolved by `VESDK.resolveStaticResource("www/path/to/your/video")` 
    * before they can be passed to the editor.

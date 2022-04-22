@@ -29,6 +29,7 @@ import org.apache.cordova.CordovaPlugin
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
+import java.util.UUID
 
 /** VESDKPlugin */
 class VESDKPlugin : CordovaPlugin() {
@@ -264,9 +265,9 @@ class VESDKPlugin : CordovaPlugin() {
                         }
                         when (serializationConfig.exportType) {
                             SerializationExportType.FILE_URL -> {
-                                val uri = serializationConfig.filename?.let {
-                                    Uri.parse(it)
-                                } ?: Uri.fromFile(File.createTempFile("serialization", ".json"))
+                                val uri = serializationConfig.filename?.let { 
+                                    Uri.parse("$it.json")
+                                } ?: Uri.fromFile(File.createTempFile("serialization-" + UUID.randomUUID().toString(), ".json"))
                                 Encoder.createOutputStream(uri).use { outputStream ->
                                     IMGLYFileWriter(settingsList).writeJson(outputStream)
                                 }

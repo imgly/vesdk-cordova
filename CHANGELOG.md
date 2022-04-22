@@ -1,3 +1,18 @@
+## [3.1.0]
+
+### Changed
+
+* Updated documentation for remote resources used in the editor. Remote resources are usable but not optimized and therefore should be downloaded in advance and then passed to the editor as local resources.
+
+### Added
+
+* Added integration and documentation for custom watermark.
+
+### Fixed
+
+* [Android] Fixed `composition.personalVideoClips` configuration option would not be resolved correctly.
+* [Android] Fixed hook configuration would fail for `cordova-android` version 10.0+.
+
 ## [3.0.0]
 
 ### Added
