@@ -42,9 +42,6 @@ class VESDKPlugin : CordovaPlugin() {
     /** The callback used for the plugin. */
     private var callback: CallbackContext? = null
 
-    /** The currently used settings list. */
-    private var currentSettingsList: VideoEditorSettingsList? = null
-
     /** The currently used configuration. */
     private var currentConfig: Configuration? = null
 
@@ -121,12 +118,10 @@ class VESDKPlugin : CordovaPlugin() {
     ) {
         callback = callbackContext
         IMGLY.authorize()
-        val settingsList = VideoEditorSettingsList()
-
-        currentSettingsList = settingsList
-        currentConfig = ConfigLoader.readFrom(config).also {
-            it.applyOn(settingsList)
-        }
+        val configuration = ConfigLoader.readFrom(config)
+        val settingsList = VideoEditorSettingsList(configuration.export?.serialization?.enabled == true)
+        configuration.applyOn(settingsList)
+        currentConfig = configuration
 
         settingsList.configure<LoadSettings> { loadSettings ->
             loadSettings.source = retrieveURI(filepath)
@@ -154,15 +149,14 @@ class VESDKPlugin : CordovaPlugin() {
     ) {
         callback = callbackContext
         IMGLY.authorize()
-        val settingsList = VideoEditorSettingsList()
 
         // Set the video size as the default source.
         var source = resolveSize(size)
 
-        currentSettingsList = settingsList
-        currentConfig = ConfigLoader.readFrom(config).also {
-            it.applyOn(settingsList)
-        }
+        val configuration = ConfigLoader.readFrom(config)
+        val settingsList = VideoEditorSettingsList(configuration.export?.serialization?.enabled == true)
+        configuration.applyOn(settingsList)
+        currentConfig = configuration
 
         if (videos != null && videos.count() > 0) {
             if (source == null) {
@@ -204,6 +198,7 @@ class VESDKPlugin : CordovaPlugin() {
             EditorBuilder(currentActivity)
                 .setSettingsList(settingsList)
                 .startActivityForResult(currentActivity, EDITOR_RESULT_ID, arrayOfNulls(0))
+            settingsList.release()
         }()
     }
 
@@ -236,7 +231,7 @@ class VESDKPlugin : CordovaPlugin() {
         if (height == 0.0 || width == 0.0) {
             return null
         }
-        return LoadSettings.compositionSource(height.toInt(), width.toInt(), 60)
+        return LoadSettings.compositionSource(width.toInt(), height.toInt(), 60)
     }
 
     /**
@@ -255,9 +250,9 @@ class VESDKPlugin : CordovaPlugin() {
             val resultPath = data.resultUri
 
             val serializationConfig = currentConfig?.export?.serialization
-            val settingsList = data.settingsList
 
             val serialization: Any? = if (serializationConfig?.enabled == true) {
+                val settingsList = data.settingsList
                 skipIfNotExists {
                     settingsList.let { settingsList ->
                         if (serializationConfig.embedSourceImage == true) {
@@ -282,6 +277,7 @@ class VESDKPlugin : CordovaPlugin() {
                     Log.i("ImgLySdk", "You need to include 'backend:serializer' Module, to use serialisation!")
                     null
                 }
+                settingsList.release()
             } else {
                 null
             }

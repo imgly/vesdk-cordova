@@ -47,7 +47,7 @@ declare class VESDK {
      * be fitted to the `videoSize` aspect by adding black bars on the left and right side or top and bottom.
      */
     static openEditor(
-        success: (args: VideoEditorResult) => void,
+        success: (args: VideoEditorResult | null) => void,
         failure: (error: any) => void,
         video: string,
         configuration?: Configuration,

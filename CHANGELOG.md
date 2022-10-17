@@ -1,3 +1,20 @@
+## [3.2.0]
+
+### Changed
+
+* 🚨 With this version you might need to create symlinks when using Android Gradle Plugin version `4.x`. Please refer to the new [known issues](https://github.com/imgly/vesdk-cordova#known-issues) section of the README for details.
+* 🚨 This version requires `minSdkVersion` `21` for Android. Please refer to the new "Supported Android versions" section in the [getting started](https://github.com/imgly/vesdk-cordova#android) section of the README for instructions on how to adjust it.
+* Raised minimum VideoEditor SDK for Android version to 10.1.1. See the [changelog](https://github.com/imgly/vesdk-android-demo/blob/master/CHANGELOG.md) for more information.
+
+### Added
+
+* Added implementation and documentation for GIPHY sticker integration.
+
+### Fixed
+
+* Fixed `VESDK.openEditor` `success` callback type declaration to return `VideoEditorResult | null` instead of just `VideoEditorResult`.
+* [Android] Fixed height and width of specified composition size would be flipped.
+
 ## [3.1.0]
 
 ### Changed

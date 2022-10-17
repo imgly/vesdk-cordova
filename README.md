@@ -20,6 +20,27 @@ Add VideoEditor SDK plugin to your project as follows:
 cordova plugin add cordova-plugin-videoeditorsdk
 ```
 
+### Known Issues
+
+With version `3.2.0`, we recommend using `compileSdkVersion` not lower than `31` for Android. However, this might interfere with your application's Android Gradle Plugin version if this is set to `4.x`.
+
+If you don't use a newer Android Gradle Plugin version, you'll most likely encounter a build error similar to:
+```
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+A problem occurred configuring project ':cordova-plugin-videoeditorsdk'.
+> com.android.builder.errors.EvalIssueException: Installed Build Tools revision 31.0.0 is corrupted. Remove and install again using the SDK Manager.
+
+* Try:
+Run with --stacktrace option to get the stack trace. Run with --info or --debug option to get more log output. Run with --scan to get full insights.
+
+* Get more help at https://help.gradle.org
+```
+As a workaround you can create the following symlinks:
+  1. Inside `/Users/YOUR-USERNAME/Library/Android/sdk/build-tools/31.0.0/`: Create a `dx` symlink for the `d8` file with `ln -s d8 dx`.
+  2. From there, go to `./lib/` and create a `dx.jar` symlink for the `d8.jar` file with `ln -s d8.jar dx.jar`. 
+
 ### Android
 
 From version `3.0.0` the plugin uses AndroidX. To enable AndroidX in your application please adjust your `config.xml`:
@@ -36,15 +57,30 @@ If your application is using legacy Android Support Libraries you can use the [`
 
 #### Kotlin Version
 
-If you are using `Cordova Android` version `10.+`, you might need to adjust the Kotlin version of your application in your `config.xml`, if your current Kotlin version is not compatible with our plugin:
+If you are using `cordova-android` version `10.+`, you might need to adjust the Kotlin version of your application in your `config.xml`, if your current Kotlin version is not compatible with our plugin:
 
 ```diff
 <platform name="android">
 ...
-+    <preference name="GradlePluginKotlinVersion" value="1.4.10" />
++    <preference name="GradlePluginKotlinVersion" value="1.5.32" />
 ...
 </platform>
 ```
+
+#### Supported Android versions
+
+With version `3.2.0` the plugin requires `minSdkVersion` `21` or higher. Depending on your `cordova-android` version you might need to raise the `minSdkVersion` manually. For this, please add the following entry to your `config.xml`:
+
+```diff
+<platform name="android">
+...
++    <preference name="android-minSdkVersion" value="21" />
+...
+</platform>
+```
+
+We further recommend you to update your `buildToolsVersion` to `31.0.0` as well as your `compileSdkVersion` to `31`. However, this is not mandatory. For further reference on how to update these variables, please refer to the official [Cordova documentation](https://cordova.apache.org/docs/en/11.x/guide/platforms/android/index.html#configuring-gradle).
+
 
 #### Module Configuration
 
