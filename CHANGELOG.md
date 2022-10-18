@@ -1,3 +1,9 @@
+## [3.3.0]
+
+### Added
+
+* Added option to specify the version of the native VideoEditor SDK for Android version via a `imglyConfig.json` file. See the [README](https://github.com/imgly/vesdk-cordova/blob/master/README.md#version) for more information.
+
 ## [3.2.0]
 
 ### Changed
