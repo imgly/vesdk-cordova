@@ -405,25 +405,32 @@ const struct VESDK_IMGLY_Constants VESDK_IMGLY = { .kErrorUnableToUnlock = @"E_U
 
 #pragma mark - PESDKPhotoEditViewControllerDelegate
 
-// The PhotoEditViewController did save an image.
-- (void)videoEditViewController:(PESDKVideoEditViewController *)videoEditViewController
-        didFinishWithVideoAtURL:(nullable NSURL *)url {
+// The VideoEditViewController was cancelled.
+- (void)videoEditViewControllerDidCancel:(PESDKVideoEditViewController *)videoEditViewController {
+  CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
+  [self closeControllerWithResult:result];
+}
 
+// The VideoEditViewController could not create the video.
+- (void)videoEditViewControllerDidFail:(PESDKVideoEditViewController * _Nonnull)videoEditViewController error:(PESDKVideoEditorError * _Nonnull)error {
+  CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR
+                                              messageAsString:@"Unable to generate video."];
+  [self closeControllerWithResult:result];
+}
+
+// The VideoEditViewController did save an image.
+- (void)videoEditViewControllerDidFinish:(PESDKVideoEditViewController * _Nonnull)videoEditViewController result:(PESDKVideoEditorResult * _Nonnull)result {
   NSError *error = nil;
   id serialization = nil;
-
   if (self.serializationEnabled) {
     NSData *serializationData = [videoEditViewController serializedSettings];
-
     if ([self.serializationType isEqualToString:VESDK_IMGLY.kExportTypeFileURL]) {
-
       if ([serializationData VESDK_IMGLY_writeToURL:self.serializationFile
                       andCreateDirectoryIfNecessary:YES
                                               error:&error]) {
         serialization = self.serializationFile.absoluteString;
       }
     } else if ([self.serializationType isEqualToString:VESDK_IMGLY.kExportTypeObject]) {
-
       serialization = [NSJSONSerialization JSONObjectWithData:serializationData options:kNilOptions error:&error];
     }
   }
@@ -431,8 +438,8 @@ const struct VESDK_IMGLY_Constants VESDK_IMGLY = { .kErrorUnableToUnlock = @"E_U
   if (error == nil) {
     CDVPluginResult *resultAsync;
     NSDictionary *payload = [NSDictionary
-      dictionaryWithObjectsAndKeys:(url != nil) ? url.absoluteString : [NSNull null], @"video",
-                                   @(videoEditViewController.hasChanges), @"hasChanges",
+      dictionaryWithObjectsAndKeys:(result.output.url != nil) ? result.output.url.absoluteString : [NSNull null], @"video",
+                                   @(result.status == VESDKVideoEditorStatusRenderedWithChanges), @"hasChanges",
                                    (serialization != nil) ? serialization : [NSNull null], @"serialization", nil];
     resultAsync = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:payload];
 
@@ -444,18 +451,6 @@ const struct VESDK_IMGLY_Constants VESDK_IMGLY = { .kErrorUnableToUnlock = @"E_U
   }
 }
 
-// The VideoEditViewController was cancelled.
-- (void)videoEditViewControllerDidCancel:(PESDKVideoEditViewController *)videoEditViewController {
-  CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
-  [self closeControllerWithResult:result];
-}
-
-// The VideoEditViewController could not create an image.
-- (void)videoEditViewControllerDidFailToGenerateVideo:(PESDKVideoEditViewController *)videoEditViewController {
-  CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR
-                                              messageAsString:@"Unable to generate video."];
-  [self closeControllerWithResult:result];
-}
 @end
 
 @implementation NSDictionary (VESDK_IMGLY_Category)
